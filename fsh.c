@@ -1,5 +1,5 @@
 #define ARG_MAX 100
-#define BUFFER_SIZE 262144
+#define BUFFER_SIZE 1000
 #define HIST_SIZE 100
 
 #include <errno.h>
@@ -9,12 +9,12 @@
 #include <unistd.h>
 
 /* Read command from stdin and return it */
-char *read_command(size_t buffer_size) {
+char *read_cmd(size_t buffer_size) {
 	char *cmd = (char *)malloc(buffer_size * sizeof(char));
 	int n;
 	
 	if (cmd == NULL) {
-		perror("Error: failed to allocate buffer.\n");
+		perror("error: failed to allocate buffer.\n");
 		exit(1);
 	}
 	
@@ -26,7 +26,7 @@ char *read_command(size_t buffer_size) {
 }
 
 /* Parse command buffer into argv[] and return the number of arguments */
-int parse_command(char *cmd, char *argv[]) {
+int parse_cmd(char *cmd, char *argv[]) {
 	char delim[] = " ";
 	int i = 0;
 
@@ -36,25 +36,53 @@ int parse_command(char *cmd, char *argv[]) {
 		argv[++i] = strtok(NULL, delim);
 	}
 
-	argv[++i] = NULL;
+	if (i != 0)
+		argv[++i] = NULL;
 
 	return i;
 }
 
 /* Execute the given command in a child process */
-void run_command(int argc, char *argv[]) {
-	if (argc > 0) {
-		pid_t pid;
+void run_cmd(char *argv[]) {
+	pid_t pid;
 
-		if ((pid = fork()) == 0) {
-			if (execv(*(argv), argv) == -1)
-				fprintf(stderr, "Error: %s\n", strerror(errno));
-			return;
-		}
-		else {
-			wait(&pid);
-		}
+	if ((pid = fork()) == 0) {
+		if (execv(*(argv), argv) == -1)
+			fprintf(stderr, "error: %s.\n", strerror(errno));
+		return;
 	}
+	else {
+		wait(&pid);
+	}
+}
+
+/* Return 1 if the given command is the built-in exit command. Otherwise, return 0. */
+int chk_exit_cmd(char *cmd) {
+	if (strcmp(cmd, "exit") == 0)
+		exit(0);
+	else
+		return 0;
+}
+
+/* Return 1 if the given command is the built-in cd command. Otherwise, return 0. */
+int chk_cd_cmd(char *argv[]) {
+	if (strcmp(*argv, "cd") == 0) {
+		if (chdir(*(argv+1)) != 0)
+			perror("error: failed to change directory.\n");
+		
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
+
+/* Return 1 if the given command is a built-in command. Otherwise, return 0. */
+int chk_builtin_cmd(char *argv[]) {
+	if (chk_exit_cmd(*argv) || chk_cd_cmd(argv))
+		return 1;
+	else
+		return 0;
 }
 
 int main() {
@@ -67,10 +95,17 @@ int main() {
 	while(1) {
 		printf("$");
 		
-		cmd_hist[cmd_idx] = read_command(buffer_size);
-		argc = parse_command(*(cmd_hist+cmd_idx), argv);
-		run_command(argc, argv);
-		
+		cmd_hist[cmd_idx] = read_cmd(buffer_size);
+		argc = parse_cmd(*(cmd_hist+cmd_idx), argv);
+
+		if (argc == 0)
+			continue;
+
 		cmd_idx++;
+		
+		if (chk_builtin_cmd(argv))
+			continue;
+			
+		run_cmd(argv);	  
 	}
 }
