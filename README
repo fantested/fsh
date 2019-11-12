@@ -1,6 +1,6 @@
-# fsh
+# shell
 
-fsh is a simple shell written in C. 
+shell is a simple shell written in C. 
 
 
 ## Examples
@@ -10,6 +10,9 @@ fsh is a simple shell written in C.
 2. Calling a built-in command:
    $cd /home
 
+3. Piping commands
+   $/bin/ls | /usr/bin/wc
+
 
 ## Built-in Commands
  - cd [dir]: change the current working direcotry of the shell. 
@@ -17,12 +20,11 @@ fsh is a simple shell written in C.
 
 
 ## Features
- - auto-suggest:
+ - auto-suggest: when invalid commands are found, suggest similar commands that are previously invoked by the user.
 
 
 ## Notes:
 1. The only supported delimiter is the whitespace character (ASCII character number 32).
 2. No support for "special" characters such as quotation marks, backslashes, or tab characters.
-3. The miximum length of a command is 1000.
-4. The maximum number of command line arguments is 100.
+3. The maximum number of command line arguments is 100.
 
